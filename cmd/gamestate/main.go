@@ -8,6 +8,7 @@ import (
 )
 
 func main() {
+	events := gsi.Events{}
 	o := observer.Observer{}
 	o.Open()
 	defer o.Close()
@@ -25,5 +26,5 @@ func main() {
 		}
 	})
 
-	gsi.Listen(3000, &o)
+	gsi.Listen(3000, &o, &events)
 }

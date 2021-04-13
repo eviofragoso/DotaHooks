@@ -4,15 +4,19 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/yaacov/observer/observer"
 )
 
 var obs *observer.Observer
+var evt *Events
 
 // Listen for Dota client calls
-func Listen(port int16, o *observer.Observer) error {
+func Listen(port int16, o *observer.Observer, events *Events) error {
 	obs = o
+	evt = events
+
 	http.HandleFunc("/", handler)
 	http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 
@@ -29,7 +33,7 @@ func handler(w http.ResponseWriter, req *http.Request) {
 }
 
 func handleGameEvents(jsonString []byte) {
-	gameState := parseGameState(jsonString)
+	gameState := parseGameState(jsonString, evt)
 
 	handleRoshanKilled(&gameState)
 	handleTeamWiped(&gameState)
@@ -41,21 +45,45 @@ func handleRoshanKilled(gameState *GameState) {
 }
 
 func handleTeamWiped(gameState *GameState) {
-	if gameState.Hero.Dire.Wiped {
-		obs.Emit("dire:teamWiped")
+	var now time.Time = time.Now()
+	if gameState.Events.teamWipedTimeDire.IsZero() ||
+		gameState.Events.teamWipedTimeDire.Before(now.Add(-1*time.Minute)) {
+
+		if gameState.Hero.Dire.Wiped {
+			gameState.Events.teamWipedTimeDire = now
+			obs.Emit("dire:teamWiped")
+		}
 	}
 
-	if gameState.Hero.Radiant.Wiped {
-		obs.Emit("radiant:teamWiped")
+	if gameState.Events.teamWipedTimeRadiant.IsZero() ||
+		gameState.Events.teamWipedTimeRadiant.Before(now.Add(-1*time.Minute)) {
+
+		if gameState.Hero.Radiant.Wiped {
+			gameState.Events.teamWipedTimeRadiant = now
+			obs.Emit("radiant:teamWiped")
+		}
 	}
 }
 
 func handleSmokeGank(gameState *GameState) {
-	if gameState.Hero.Dire.SmokeGank {
-		obs.Emit("dire:smokeGank")
+	var now time.Time = time.Now()
+
+	if gameState.Events.smokeGankDire.IsZero() ||
+		gameState.Events.smokeGankDire.Before(now.Add(-60*time.Second)) {
+
+		if gameState.Hero.Dire.SmokeGank {
+			gameState.Events.smokeGankDire = now
+			fmt.Println(gameState.Events.smokeGankDire)
+			obs.Emit("dire:smokeGank")
+		}
 	}
 
-	if gameState.Hero.Radiant.SmokeGank {
-		obs.Emit("radiant:smokeGank")
+	if gameState.Events.smokeGankRadiant.IsZero() ||
+		gameState.Events.smokeGankRadiant.Before(now.Add(-60*time.Second)) {
+
+		if gameState.Hero.Radiant.SmokeGank {
+			gameState.Events.smokeGankRadiant = now
+			obs.Emit("radiant:smokeGank")
+		}
 	}
 }

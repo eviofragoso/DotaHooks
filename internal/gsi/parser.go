@@ -2,17 +2,42 @@ package gsi
 
 import (
 	"encoding/json"
+	"time"
 )
+
+// Bool custom boolean type
+
+// UnmarshalJSON override of json marshal to handle empty booleans
+// func (value *heroPlayerData) UnmarshalJSON(b []byte) (err error) {
+// 	var hpd map[string]interface{}
+// 	json.Unmarshal(b, &hpd)
+
+// 	value.Alive = bool(hpd["alive"] == true)
+// 	value.Dead = bool(hpd["alive"] == false)
+// 	value.Smoked = bool(hpd["smoked"] == true)
+
+// 	return err
+// }
 
 // GameState Data structure that holds data received from the client
 type GameState struct {
-	Previously *GameState  `json:"previously,omitempty"`
-	Added      *GameState  `json:"added,omitempty"`
-	Items      items       `json:"items,omitempty"`
-	Map        mapData     `json:"map,omitempty"`
-	Buildings  buildings   `json:"buildings,omitempty"`
-	Player     playerStats `json:"player,omitempty"`
-	Hero       hero        `json:"hero,omitempty"`
+	Previously *GameState   `json:"previously"`
+	Added      *GameState   `json:"added"`
+	Items      *items       `json:"items"`
+	Map        *mapData     `json:"map"`
+	Buildings  *buildings   `json:"buildings"`
+	Player     *playerStats `json:"player"`
+	Hero       *hero        `json:"hero"`
+	Events     *Events
+}
+
+// Events holder for keep state of notifications
+type Events struct {
+	roshanKilledTime     time.Time
+	teamWipedTimeDire    time.Time
+	teamWipedTimeRadiant time.Time
+	smokeGankDire        time.Time
+	smokeGankRadiant     time.Time
 }
 
 type mapData struct {
@@ -35,21 +60,25 @@ type barracks struct {
 }
 
 type buildings struct {
-	Radiant struct {
-		RangedMiddleBarracks barracks `json:"good_rax_range_mid,omitempty"`
-		RangedBotBarracks    barracks `json:"good_rax_range_bot,omitempty"`
-		RangedTopBarracks    barracks `json:"good_rax_range_top,omitempty"`
-		MeleeMiddleBarracks  barracks `json:"good_rax_melee_mid,omitempty"`
-		MeleedBotBarracks    barracks `json:"good_rax_melee_bot,omitempty"`
-		MeleedTopBarracks    barracks `json:"good_rax_melee_top,omitempty"`
-	} `json:"radiant,omitempty"`
-	Dire struct {
-		RangedMiddleBarracks barracks `json:"bad_rax_range_mid,omitempty"`
-		RangedBotBarracks    barracks `json:"bad_rax_range_bot,omitempty"`
-		RangedTopBarracks    barracks `json:"bad_rax_range_top,omitempty"`
-		MeleeMiddleBarracks  barracks `json:"bad_rax_melee_mid,omitempty"`
-		MeleedBotBarracks    barracks `json:"bad_rax_melee_bot,omitempty"`
-	} `json:"dire,omitempty"`
+	Radiant radiantBuildings `json:"radiant"`
+	Dire    direBuildings    `json:"dire"`
+}
+
+type radiantBuildings struct {
+	RangedMiddleBarracks *barracks `json:"good_rax_range_mid"`
+	RangedBotBarracks    *barracks `json:"good_rax_range_bot"`
+	RangedTopBarracks    *barracks `json:"good_rax_range_top"`
+	MeleeMiddleBarracks  *barracks `json:"good_rax_melee_mid"`
+	MeleedBotBarracks    *barracks `json:"good_rax_melee_bot"`
+	MeleedTopBarracks    *barracks `json:"good_rax_melee_top"`
+}
+
+type direBuildings struct {
+	RangedMiddleBarracks *barracks `json:"bad_rax_range_mid"`
+	RangedBotBarracks    *barracks `json:"bad_rax_range_bot"`
+	RangedTopBarracks    *barracks `json:"bad_rax_range_top"`
+	MeleeMiddleBarracks  *barracks `json:"bad_rax_melee_mid"`
+	MeleedBotBarracks    *barracks `json:"bad_rax_melee_bot"`
 }
 
 type player struct {
@@ -73,20 +102,24 @@ type player struct {
 }
 
 type playerStats struct {
-	Radiant struct {
-		Player0 player `json:"player0,omitempty"`
-		Player1 player `json:"player1,omitempty"`
-		Player2 player `json:"player2,omitempty"`
-		Player3 player `json:"player3,omitempty"`
-		Player4 player `json:"player4,omitempty"`
-	} `json:"team2,omitempty"`
-	Dire struct {
-		Player5 player `json:"player5,omitempty"`
-		Player6 player `json:"player6,omitempty"`
-		Player7 player `json:"player7,omitempty"`
-		Player8 player `json:"player8,omitempty"`
-		Player9 player `json:"player9,omitempty"`
-	} `json:"team3,omitempty"`
+	Radiant *playerStatsRadiant `json:"team2"`
+	Dire    *playerStatsDire    `json:"team3"`
+}
+
+type playerStatsRadiant struct {
+	Player0 *player `json:"player0"`
+	Player1 *player `json:"player1"`
+	Player2 *player `json:"player2"`
+	Player3 *player `json:"player3"`
+	Player4 *player `json:"player4"`
+}
+
+type playerStatsDire struct {
+	Player5 *player `json:"player5"`
+	Player6 *player `json:"player6"`
+	Player7 *player `json:"player7"`
+	Player8 *player `json:"player8"`
+	Player9 *player `json:"player9"`
 }
 
 type item struct {
@@ -96,76 +129,82 @@ type item struct {
 }
 
 type playerItems struct {
-	Slot1  item `json:"slot1,omitempty"`
-	Slot2  item `json:"slot2,omitempty"`
-	Slot3  item `json:"slot3,omitempty"`
-	Slot4  item `json:"slot4,omitempty"`
-	Slot5  item `json:"slot5,omitempty"`
-	Slot6  item `json:"slot6,omitempty"`
-	Slot7  item `json:"slot7,omitempty"`
-	Slot8  item `json:"slot8,omitempty"`
-	Stash0 item `json:"stash0,omitempty"`
-	Stash1 item `json:"stash1,omitempty"`
-	Stash2 item `json:"stash2,omitempty"`
-	Stash3 item `json:"stash3,omitempty"`
-	Stash4 item `json:"stash4,omitempty"`
-	Stash5 item `json:"stash5,omitempty"`
+	Slot1  *item `json:"slot1,omitempty"`
+	Slot2  *item `json:"slot2,omitempty"`
+	Slot3  *item `json:"slot3,omitempty"`
+	Slot4  *item `json:"slot4,omitempty"`
+	Slot5  *item `json:"slot5,omitempty"`
+	Slot6  *item `json:"slot6,omitempty"`
+	Slot7  *item `json:"slot7,omitempty"`
+	Slot8  *item `json:"slot8,omitempty"`
+	Stash0 *item `json:"stash0,omitempty"`
+	Stash1 *item `json:"stash1,omitempty"`
+	Stash2 *item `json:"stash2,omitempty"`
+	Stash3 *item `json:"stash3,omitempty"`
+	Stash4 *item `json:"stash4,omitempty"`
+	Stash5 *item `json:"stash5,omitempty"`
 }
 
 type items struct {
-	Radiant struct {
-		Player0 playerItems `json:"player0,omitempty"`
-		Player1 playerItems `json:"player1,omitempty"`
-		Player2 playerItems `json:"player2,omitempty"`
-		Player3 playerItems `json:"player3,omitempty"`
-		Player4 playerItems `json:"player4,omitempty"`
-	} `json:"team2,omitempty"`
-	Dire struct {
-		Player5 playerItems `json:"player5,omitempty"`
-		Player6 playerItems `json:"player6,omitempty"`
-		Player7 playerItems `json:"player7,omitempty"`
-		Player8 playerItems `json:"player8,omitempty"`
-		Player9 playerItems `json:"player9,omitempty"`
-	} `json:"team3,omitempty"`
+	Radiant *itemsRadiant `json:"team2"`
+	Dire    *itemsDire    `json:"team3"`
+}
+
+type itemsRadiant struct {
+	Player0 *playerItems `json:"player0"`
+	Player1 *playerItems `json:"player1"`
+	Player2 *playerItems `json:"player2"`
+	Player3 *playerItems `json:"player3"`
+	Player4 *playerItems `json:"player4"`
+}
+
+type itemsDire struct {
+	Player5 *playerItems `json:"player5"`
+	Player6 *playerItems `json:"player6"`
+	Player7 *playerItems `json:"player7"`
+	Player8 *playerItems `json:"player8"`
+	Player9 *playerItems `json:"player9"`
 }
 
 type heroPlayerData struct {
-	Alive  bool `json:"alive"`
-	Smoked bool `json:"smoked"`
+	Alive  bool `json:"alive,omitempty"`
+	Dead   bool
+	Smoked bool `json:"smoked,omitempty"`
 }
 
 type heroTeamDataRadiant struct {
 	SmokeGank bool
 	Wiped     bool
-	Player0   heroPlayerData `json:"player0,omitempty"`
-	Player1   heroPlayerData `json:"player1,omitempty"`
-	Player2   heroPlayerData `json:"player2,omitempty"`
-	Player3   heroPlayerData `json:"player3,omitempty"`
-	Player4   heroPlayerData `json:"player4,omitempty"`
+	Player0   *heroPlayerData `json:"player0"`
+	Player1   *heroPlayerData `json:"player1"`
+	Player2   *heroPlayerData `json:"player2"`
+	Player3   *heroPlayerData `json:"player3"`
+	Player4   *heroPlayerData `json:"player4"`
 }
 
 type heroTeamDataDire struct {
 	SmokeGank bool
 	Wiped     bool
-	Player5   heroPlayerData `json:"player5,omitempty"`
-	Player6   heroPlayerData `json:"player6,omitempty"`
-	Player7   heroPlayerData `json:"player7,omitempty"`
-	Player8   heroPlayerData `json:"player8,omitempty"`
-	Player9   heroPlayerData `json:"player9,omitempty"`
+	Player5   *heroPlayerData `json:"player5"`
+	Player6   *heroPlayerData `json:"player6"`
+	Player7   *heroPlayerData `json:"player7"`
+	Player8   *heroPlayerData `json:"player8"`
+	Player9   *heroPlayerData `json:"player9"`
 }
 
 type hero struct {
-	Radiant heroTeamDataRadiant `json:"team2,omitempty"`
-	Dire    heroTeamDataDire    `json:"team3,omitempty"`
+	Radiant *heroTeamDataRadiant `json:"team2"`
+	Dire    *heroTeamDataDire    `json:"team3"`
 }
 
-func parseGameState(jsonData []byte) GameState {
+func parseGameState(jsonData []byte, events *Events) GameState {
 	added := GameState{}
 	previously := GameState{}
 
 	gameState := GameState{
 		Added:      &added,
 		Previously: &previously,
+		Events:     events,
 	}
 
 	json.Unmarshal(jsonData, &gameState)
@@ -175,11 +214,11 @@ func parseGameState(jsonData []byte) GameState {
 }
 
 func updateHeroData(gameState *GameState) {
-	checkRadiantTeamWiped(&gameState.Hero.Radiant)
-	checkDireTeamWiped(&gameState.Hero.Dire)
+	checkRadiantTeamWiped(gameState.Hero.Radiant)
+	checkDireTeamWiped(gameState.Hero.Dire)
 
-	checkSmokeGankRadiant(&gameState.Hero.Radiant)
-	checkSmokeGankDire(&gameState.Hero.Dire)
+	checkSmokeGankRadiant(gameState.Hero.Radiant)
+	checkSmokeGankDire(gameState.Hero.Dire)
 }
 
 func checkRadiantTeamWiped(data *heroTeamDataRadiant) {
