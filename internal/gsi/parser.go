@@ -33,7 +33,7 @@ type GameState struct {
 
 // Events holder for keep state of notifications
 type Events struct {
-	roshanKilledTime     time.Time
+	aegisTaken           time.Time
 	teamWipedTimeDire    time.Time
 	teamWipedTimeRadiant time.Time
 	smokeGankDire        time.Time
@@ -44,7 +44,7 @@ type mapData struct {
 	Name               string `json:"name,omitempty"`
 	MatchID            int16  `json:"matchid,omitempty"`
 	Gametime           string `json:"game_time,omitempty"`
-	Clocktime          string `json:"clock_time,omitempty"`
+	Clocktime          int8   `json:"clock_time,omitempty"`
 	Daytime            bool   `json:"daytime,omitempty"`
 	NightstalkerNight  bool   `json:"nightstalker_night,omitempty"`
 	Paused             bool   `json:"paused,omitempty"`
@@ -151,19 +151,21 @@ type items struct {
 }
 
 type itemsRadiant struct {
-	Player0 *playerItems `json:"player0"`
-	Player1 *playerItems `json:"player1"`
-	Player2 *playerItems `json:"player2"`
-	Player3 *playerItems `json:"player3"`
-	Player4 *playerItems `json:"player4"`
+	AegisTaken bool
+	Player0    *playerItems `json:"player0"`
+	Player1    *playerItems `json:"player1"`
+	Player2    *playerItems `json:"player2"`
+	Player3    *playerItems `json:"player3"`
+	Player4    *playerItems `json:"player4"`
 }
 
 type itemsDire struct {
-	Player5 *playerItems `json:"player5"`
-	Player6 *playerItems `json:"player6"`
-	Player7 *playerItems `json:"player7"`
-	Player8 *playerItems `json:"player8"`
-	Player9 *playerItems `json:"player9"`
+	AegisTaken bool
+	Player5    *playerItems `json:"player5"`
+	Player6    *playerItems `json:"player6"`
+	Player7    *playerItems `json:"player7"`
+	Player8    *playerItems `json:"player8"`
+	Player9    *playerItems `json:"player9"`
 }
 
 type heroPlayerData struct {
@@ -209,16 +211,97 @@ func parseGameState(jsonData []byte, events *Events) GameState {
 
 	json.Unmarshal(jsonData, &gameState)
 	updateHeroData(&gameState)
+	updateAegisTaken(&gameState)
 
 	return gameState
 }
 
 func updateHeroData(gameState *GameState) {
+	if gameState.Hero == nil {
+		return
+	}
+
 	checkRadiantTeamWiped(gameState.Hero.Radiant)
 	checkDireTeamWiped(gameState.Hero.Dire)
 
 	checkSmokeGankRadiant(gameState.Hero.Radiant)
 	checkSmokeGankDire(gameState.Hero.Dire)
+}
+
+func updateAegisTaken(gameState *GameState) {
+	if gameState.Map.RoshanState == "alive" &&
+		(gameState.Items.Dire.AegisTaken || gameState.Items.Radiant.AegisTaken) {
+
+		gameState.Items.Dire.AegisTaken = false
+		gameState.Items.Radiant.AegisTaken = false
+
+		return
+	}
+
+	if gameState.Map.RoshanState == "respawn_base" {
+		updateAegisDire(gameState.Items.Dire)
+		checkAegisRadiant(gameState.Items.Radiant)
+	}
+}
+
+func updateAegisDire(items *itemsDire) {
+	players := [5]*playerItems{
+		items.Player5,
+		items.Player6,
+		items.Player7,
+		items.Player8,
+		items.Player9,
+	}
+
+	for i := 0; i < len(players); i++ {
+		playerItems := [6]*item{
+			players[i].Slot1,
+			players[i].Slot2,
+			players[i].Slot3,
+			players[i].Slot4,
+			players[i].Slot5,
+			players[i].Slot6,
+		}
+
+		for j := 0; j < len(playerItems); j++ {
+			if playerItems[j] != nil && playerItems[j].Name == "item_aegis" {
+				items.AegisTaken = true
+				return
+			}
+		}
+	}
+
+	items.AegisTaken = false
+}
+
+func checkAegisRadiant(items *itemsRadiant) {
+	players := [5]*playerItems{
+		items.Player0,
+		items.Player1,
+		items.Player2,
+		items.Player3,
+		items.Player4,
+	}
+
+	for i := 0; i < len(players); i++ {
+		playerItems := [6]*item{
+			players[i].Slot1,
+			players[i].Slot2,
+			players[i].Slot3,
+			players[i].Slot4,
+			players[i].Slot5,
+			players[i].Slot6,
+		}
+
+		for j := 0; j < len(playerItems); j++ {
+			if playerItems[j] != nil && playerItems[j].Name == "item_aegis" {
+				items.AegisTaken = true
+				return
+			}
+		}
+	}
+
+	items.AegisTaken = false
 }
 
 func checkRadiantTeamWiped(data *heroTeamDataRadiant) {

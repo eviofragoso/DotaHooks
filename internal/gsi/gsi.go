@@ -34,14 +34,35 @@ func handler(w http.ResponseWriter, req *http.Request) {
 
 func handleGameEvents(jsonString []byte) {
 	gameState := parseGameState(jsonString, evt)
+	// s, _ := json.MarshalIndent(gameState.Added, "", "\t")
+	// fmt.Print(string(s))
 
-	handleRoshanKilled(&gameState)
+	handleAegisTaken(&gameState)
 	handleTeamWiped(&gameState)
 	handleSmokeGank(&gameState)
 }
 
-func handleRoshanKilled(gameState *GameState) {
+func handleAegisTaken(gameState *GameState) {
 	// fmt.Println("RoshanKilled")
+	var now time.Time = time.Now()
+
+	if !gameState.Events.aegisTaken.IsZero() {
+		if gameState.Map.RoshanState == "alive" {
+			gameState.Events.aegisTaken = time.Time{}
+		}
+
+		return
+	}
+
+	if gameState.Items.Dire.AegisTaken {
+		gameState.Events.aegisTaken = now
+		obs.Emit("dire:aegisTaken")
+	}
+
+	if gameState.Items.Radiant.AegisTaken {
+		gameState.Events.aegisTaken = now
+		obs.Emit("radiant:aegisTaken")
+	}
 }
 
 func handleTeamWiped(gameState *GameState) {
@@ -69,17 +90,16 @@ func handleSmokeGank(gameState *GameState) {
 	var now time.Time = time.Now()
 
 	if gameState.Events.smokeGankDire.IsZero() ||
-		gameState.Events.smokeGankDire.Before(now.Add(-60*time.Second)) {
+		gameState.Events.smokeGankDire.Before(now.Add(-1*time.Minute)) {
 
 		if gameState.Hero.Dire.SmokeGank {
 			gameState.Events.smokeGankDire = now
-			fmt.Println(gameState.Events.smokeGankDire)
 			obs.Emit("dire:smokeGank")
 		}
 	}
 
 	if gameState.Events.smokeGankRadiant.IsZero() ||
-		gameState.Events.smokeGankRadiant.Before(now.Add(-60*time.Second)) {
+		gameState.Events.smokeGankRadiant.Before(now.Add(-1*time.Minute)) {
 
 		if gameState.Hero.Radiant.SmokeGank {
 			gameState.Events.smokeGankRadiant = now

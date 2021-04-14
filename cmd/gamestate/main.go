@@ -23,6 +23,10 @@ func main() {
 			fmt.Println("Dire is prepared to fight")
 		case "radiant:smokeGank":
 			fmt.Println("Radiant is prepared to fight")
+		case "dire:aegisTaken":
+			fmt.Println("Aegis is taken by the dire")
+		case "radiant:aegisTaken":
+			fmt.Println("Aegis is taken by the radiant")
 		}
 	})
 
